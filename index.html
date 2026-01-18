@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>stilleswasser93 Lanyard</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* Grundsetup */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body, html {
+    width: 100%;
+    height: 100%;
+    font-family: 'Roboto', sans-serif;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #000;
+    color: #fff;
+  }
+
+  /* Hintergrundvideo */
+  #bg-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -1;
+    opacity: 0.25;
+  }
+
+  /* Card */
+  .card {
+    background: rgba(0,0,0,0.8);
+    border: 2px solid #fff;
+    border-radius: 20px;
+    padding: 2rem;
+    width: 350px;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(255,255,255,0.5);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 60px rgba(255,255,255,0.7);
+  }
+
+  /* Avatar */
+  .avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    margin-bottom: 1rem;
+    box-shadow: 0 0 20px rgba(255,255,255,0.5);
+  }
+
+  /* Username */
+  h1 {
+    margin-bottom: 0.5rem;
+    font-size: 1.8rem;
+    text-shadow: 0 0 10px #fff;
+  }
+
+  /* Status */
+  .status {
+    margin: 0.5rem 0;
+    font-weight: bold;
+    font-size: 1rem;
+  }
+  .status-dot {
+    height: 14px;
+    width: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+    box-shadow: 0 0 10px #fff;
+  }
+  .online { background: #43b581; }
+  .idle { background: #faa61a; }
+  .dnd { background: #f04747; }
+  .offline { background: #747f8d; }
+
+  /* Spotify */
+  .spotify {
+    margin-top: 1rem;
+    font-size: 0.95rem;
+    color: #1db954;
+    text-shadow: 0 0 5px #1db954;
+  }
+
+  /* Footer Glow */
+  .footer-glow {
+    position: fixed;
+    bottom: 20px;
+    font-size: 0.8rem;
+    color: #fff;
+    text-shadow: 0 0 10px #fff;
+  }
+</style>
+</head>
+<body>
+
+<!-- Background Video -->
+<video autoplay muted loop id="bg-video">
+  <source src="/assets/background.mp4" type="video/mp4">
+  Your browser does not support HTML5 video.
+</video>
+
+<div class="card">
+  <img src="" alt="Avatar" class="avatar" id="avatar">
+  <h1 id="username">stilleswasser93</h1>
+  <div class="status"><span class="status-dot" id="status-dot"></span><span id="status-text"></span></div>
+  <div class="spotify" id="spotify"></div>
+</div>
+
+<div class="footer-glow">Guns.lol Style Lanyard</div>
+
+<script>
+const userId = "1033745912071192688";
+const avatarImg = document.getElementById("avatar");
+const usernameEl = document.getElementById("username");
+const statusDot = document.getElementById("status-dot");
+const statusText = document.getElementById("status-text");
+const spotifyEl = document.getElementById("spotify");
+
+async function fetchLanyard() {
+  const res = await fetch(`https://api.lanyard.rest/v1/users/${userId}`);
+  const data = await res.json();
+  updateCard(data.data);
+}
+
+function updateCard(data) {
+  avatarImg.src = `https://cdn.discordapp.com/avatars/${data.discord_user.id}/${data.discord_user.avatar}.png?size=256`;
+  usernameEl.textContent = data.discord_user.username;
+
+  const status = data.discord_status;
+  statusDot.className = `status-dot ${status}`;
+  statusText.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+
+  if (data.listening_to_spotify) {
+    spotifyEl.textContent = `${data.spotify.song} - ${data.spotify.artist}`;
+  } else {
+    spotifyEl.textContent = '';
+  }
+}
+
+// Erstes Laden
+fetchLanyard();
+
+// WebSocket für Live-Updates
+const ws = new WebSocket(`wss://api.lanyard.rest/socket`);
+ws.onopen = () => {
+  ws.send(JSON.stringify({
+    op: 2,
+    d: { subscribe_to_id: userId }
+  }));
+};
+ws.onmessage = (msg) => {
+  const data = JSON.parse(msg.data);
+  if (data.t === "INIT_STATE" || data.t === "PRESENCE_UPDATE") {
+    updateCard(data.d);
+  }
+};
+</script>
+
+</body>
+</html>
