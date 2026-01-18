@@ -9,16 +9,18 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{width:100%;height:100%;font-family:'Roboto',sans-serif;overflow:hidden;display:flex;justify-content:center;align-items:center;background:#000;color:#fff;}
 #bg-video{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-1;opacity:0.25;}
-.card{background:rgba(0,0,0,0.8);border:2px solid #fff;border-radius:20px;padding:2rem;width:380px;text-align:center;box-shadow:0 0 40px rgba(255,255,255,0.5);transition:0.3s;}
+.card{background:rgba(0,0,0,0.8);border:2px solid #fff;border-radius:20px;padding:2rem;width:400px;text-align:center;box-shadow:0 0 40px rgba(255,255,255,0.5);transition:0.3s;}
 .card:hover{transform:scale(1.05);box-shadow:0 0 60px rgba(255,255,255,0.7);}
-.avatar{width:120px;height:120px;border-radius:50%;border:4px solid #fff;margin-bottom:1rem;box-shadow:0 0 20px rgba(255,255,255,0.5);}
-h1{margin-bottom:0.5rem;font-size:1.8rem;text-shadow:0 0 10px #fff;}
+.avatar{width:120px;height:120px;border-radius:50%;border:4px solid #fff;margin-bottom:0.5rem;box-shadow:0 0 20px rgba(255,255,255,0.5);}
+h1{margin-bottom:0.2rem;font-size:1.8rem;text-shadow:0 0 10px #fff;}
 .status{margin:0.5rem 0;font-weight:bold;font-size:1rem;}
 .status-dot{height:14px;width:14px;border-radius:50%;display:inline-block;margin-right:0.5rem;box-shadow:0 0 10px #fff;}
 .online{background:#43b581;}
 .idle{background:#faa61a;}
 .dnd{background:#f04747;}
 .offline{background:#747f8d;}
+.primary-guild{margin-bottom:0.7rem;display:flex;align-items:center;justify-content:center;gap:5px;font-size:0.85rem;color:#1db954;text-shadow:0 0 5px #1db954;}
+.primary-guild img{width:18px;height:18px;}
 .activities{margin-top:1rem;display:flex;flex-direction:column;gap:8px;justify-content:center;align-items:center;font-size:0.95rem;}
 .activity-item, .spotify-item{display:flex;align-items:center;gap:8px;}
 .spotify-item{color:#1db954;text-shadow:0 0 5px #1db954;}
@@ -41,6 +43,7 @@ h1{margin-bottom:0.5rem;font-size:1.8rem;text-shadow:0 0 10px #fff;}
   <img src="" alt="Avatar" class="avatar" id="avatar">
   <h1 id="username">stilleswasser93</h1>
   <div class="status"><span class="status-dot" id="status-dot"></span><span id="status-text"></span></div>
+  <div class="primary-guild" id="primary-guild"></div>
   <div class="activities" id="activities"></div>
 </div>
 
@@ -48,15 +51,15 @@ h1{margin-bottom:0.5rem;font-size:1.8rem;text-shadow:0 0 10px #fff;}
 <div id="visit-counter">Visits: 0</div>
 
 <script>
-// ================= CONFIG =================
 const userId = "1033745912071192688";
-const showCounter = false;
+const showCounter = true;
 
 const avatarImg = document.getElementById("avatar");
 const usernameEl = document.getElementById("username");
 const statusDot = document.getElementById("status-dot");
 const statusText = document.getElementById("status-text");
 const activitiesContainer = document.getElementById("activities");
+const primaryGuildEl = document.getElementById("primary-guild");
 const counterEl = document.getElementById("visit-counter");
 
 // ========== Visit Counter ==========
@@ -98,12 +101,9 @@ function updateActivities(data){
 
         if(act.assets && act.assets.large_image){
           let imgUrl = act.assets.large_image;
-          // Lanyard liefert manchmal "mp:external/..." → direkt benutzen
           if(imgUrl.startsWith('mp:external/')){
             imgUrl = imgUrl.split('/https/')[1];
             imgUrl = 'https://' + imgUrl;
-          } else if(imgUrl.startsWith('spotify:')) {
-            imgUrl = data.spotify.album_art_url; // fallback
           } else {
             imgUrl = `https://cdn.discordapp.com/app-assets/${act.application_id}/${imgUrl}.png`;
           }
@@ -122,6 +122,21 @@ function updateActivities(data){
   }
 }
 
+// Primary Guild + Badge
+function updateGuild(data){
+  primaryGuildEl.innerHTML = '';
+  if(data.primary_guild && data.primary_guild.tag){
+    const img = document.createElement('img');
+    if(data.primary_guild.badge){
+      img.src = `https://cdn.discordapp.com/badges/${data.primary_guild.badge}.png`;
+    }
+    const span = document.createElement('span');
+    span.textContent = data.primary_guild.tag;
+    primaryGuildEl.appendChild(img);
+    primaryGuildEl.appendChild(span);
+  }
+}
+
 function updateCard(data){
   avatarImg.src = `https://cdn.discordapp.com/avatars/${data.discord_user.id}/${data.discord_user.avatar}.png?size=256`;
   usernameEl.textContent = data.discord_user.username;
@@ -129,6 +144,7 @@ function updateCard(data){
   statusDot.className = `status-dot ${status}`;
   statusText.textContent = status.charAt(0).toUpperCase() + status.slice(1);
 
+  updateGuild(data);
   updateActivities(data);
 }
 
